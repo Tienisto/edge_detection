@@ -110,6 +110,11 @@ private fun findContours(src: Mat): ArrayList<MatOfPoint> {
     cannedImage.release()
     resizedImage.release()
 
+    // scale up again
+    contours.forEach { mat ->
+        Core.multiply(mat, Scalar(ratio, ratio), mat)
+    }
+
     return contours
 }
 
