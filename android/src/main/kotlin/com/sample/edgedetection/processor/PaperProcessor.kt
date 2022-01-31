@@ -5,6 +5,7 @@ import android.util.Log
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
+import java.util.*
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -78,22 +79,26 @@ private fun findContours(src: Mat): ArrayList<MatOfPoint> {
 
     val grayImage: Mat
     val cannedImage: Mat
-    val kernel: Mat = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(9.0, 9.0))
-    val dilate: Mat
-    val size = Size(src.size().width, src.size().height)
+    val resizedImage: Mat
+
+    val ratio: Double = src.size().height / 500
+    val height: Int = java.lang.Double.valueOf(src.size().height / ratio).toInt()
+    val width: Int = java.lang.Double.valueOf(src.size().width / ratio).toInt()
+    val size = Size(width.toDouble(), height.toDouble())
+
+    resizedImage = Mat(size, CvType.CV_8UC4)
     grayImage = Mat(size, CvType.CV_8UC4)
     cannedImage = Mat(size, CvType.CV_8UC1)
-    dilate = Mat(size, CvType.CV_8UC1)
 
-    Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_BGR2GRAY)
+    Imgproc.resize(src, resizedImage, size)
+    Imgproc.cvtColor(resizedImage, grayImage, Imgproc.COLOR_RGBA2GRAY, 4)
     Imgproc.GaussianBlur(grayImage, grayImage, Size(5.0, 5.0), 0.0)
-    Imgproc.threshold(grayImage, grayImage, 20.0, 255.0, Imgproc.THRESH_TRIANGLE)
-    Imgproc.Canny(grayImage, cannedImage, 75.0, 200.0)
-    Imgproc.dilate(cannedImage, dilate, kernel)
+    Imgproc.Canny(grayImage, cannedImage, 80.0, 100.0, 3, false)
+
     val contours = ArrayList<MatOfPoint>()
     val hierarchy = Mat()
     Imgproc.findContours(
-            dilate,
+            cannedImage,
             contours,
             hierarchy,
             Imgproc.RETR_TREE,
@@ -103,8 +108,7 @@ private fun findContours(src: Mat): ArrayList<MatOfPoint> {
     hierarchy.release()
     grayImage.release()
     cannedImage.release()
-    kernel.release()
-    dilate.release()
+    resizedImage.release()
 
     return contours
 }
